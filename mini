@@ -1,0 +1,563 @@
+using System;
+using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
+using System.Net.WebSockets;
+
+class Updated_Mini_SuperMarKet
+{
+
+    static void Main(string[] args)
+    {
+        Dictionary<int, List<String>> ListOfItems = new Dictionary<int, List<String>>();
+        ListOfItems.Add(1, new List<String> { "Milk", "DairyProducts", "60", "1" });
+        ListOfItems.Add(2, new List<string> { "Bread", "Bakery", "40", "2" });
+        ListOfItems.Add(3, new List<string> { "Eggs", "DairyProducts", "8", "1" });
+        ListOfItems.Add(4, new List<string> { "Curd", "DairyProducts", "10", "1" });
+        ListOfItems.Add(5, new List<string> { "Banana", "Fruits", "20", "3" });
+        ListOfItems.Add(6, new List<string> { "Apple", "Fruits", "30", "3" });
+        ListOfItems.Add(7, new List<string> { "Potato", "Vegetables", "20", "4" });
+        ListOfItems.Add(8, new List<string> { "Tomato", "Vegetables", "30", "4" });
+        ListOfItems.Add(9, new List<string> { "Onion", "Vegetables", "20", "4" });
+        ListOfItems.Add(10, new List<string> { "Orange", "Fruits", "40", "3" });
+        ListOfItems.Add(11, new List<string> { "Bickets", "Snacks", "20", "5" });
+        ListOfItems.Add(12, new List<string> { "Chips", "Snacks", "30", "5" });
+        Console.WriteLine("Welcome to the Mini Super Market!");
+        List<List<String>> SortedCategoryName = ListOfItems.Values.Select(x => new List<String> { x[1], x[3] }).ToList();
+
+        HashSet<string> CatogorySet = new HashSet<string>();
+        List<List<String>> CatogoryList = new List<List<string>>(); foreach (var item in SortedCategoryName)
+        {
+            if (CatogorySet.Add(item[1]))
+            {
+
+                CatogoryList.Add(item);
+            }
+        }
+        
+        List<KeyValuePair<int, String>> AvailableCatogories = CatogoryList.Select(x => new KeyValuePair<int, string>(int.Parse(x[1]), x[0])).ToList();
+  
+        bool loop = true;
+        while (loop)
+        {
+           
+            Console.WriteLine("1.Admin");
+            Console.WriteLine("2.Made a Bill");
+            Console.WriteLine("3.exit");
+            Console.WriteLine("Please select the option you want to perform: ");
+            try
+            {
+                int option = Convert.ToInt32(Console.ReadLine());
+                if (option<1 || option > 3)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Please select a valid option");
+                    Console.ResetColor();
+                    continue;
+                }
+                int AdminLoopCount = 0;
+                switch (option)
+                {
+                    case 1:
+                        bool AdminLoop = true;
+                        while (AdminLoop)
+                        {
+
+                            if (AdminLoopCount > 0) Console.Write("");
+                            else Console.WriteLine("Welcome to the Admin Pannel");
+                            AdminLoopCount++;
+                            Console.WriteLine("Choose the operation you want to perform :");
+                            Console.WriteLine("1.Add Item to Stock");
+                            Console.WriteLine("2.Remove Item from Stock");
+                            Console.WriteLine("3.Update Item in Stock");
+                            Console.WriteLine("4.View stock");
+                            Console.WriteLine("5.Add a Catogory");
+                            Console.WriteLine("6.Exit");
+                            Console.WriteLine("Please select the option you want to perform:");
+                            try
+                            {
+                                int AdminOption = int.Parse(Console.ReadLine());
+                                if(AdminOption>6 || AdminOption < 1)
+                                {
+                                    throw new Exception("User Option Invalid");
+                                }
+                                switch (AdminOption)
+                                {
+
+                                    case 1:
+                                        bool AddItemToStockLoop = true;
+                                        while (AddItemToStockLoop)
+                                        {
+                                            Console.WriteLine("Enter the ItemName you Want to Add: ");
+                                            string ItemName = Console.ReadLine();
+                                            while (!ValidateName(ItemName.Trim(), "ItemName"))
+                                            {
+
+                                                ItemName = Console.ReadLine();
+                                            }
+
+                                            Console.WriteLine("Select the Category of the Item: ");
+                                            Console.WriteLine("List of Catogories  available in the stock");
+
+                                            foreach (List<string> item in CatogoryList.OrderBy(x => int.Parse(x[1])).ToList())
+                                            {
+                                                Console.WriteLine($"{item[1]}.{item[0]}");
+                                            }
+                                            Console.WriteLine("Please select the Catogory of the Item: ");
+                                            string ItemCatogoryId = Console.ReadLine();
+                                            while (!ValidateCatogoryId(ItemCatogoryId,AvailableCatogories))
+                                            {
+                                                Console.WriteLine("Please enter the valid Catogory number ");
+                                                ItemCatogoryId = Console.ReadLine();
+                                            }
+
+                                            Console.WriteLine("Enter the Price of the item: ");
+                                            string itemPrice = Console.ReadLine();
+                                            double ItemPrice;
+                                            while (!ValidatePrice(itemPrice))
+                                            {
+                                                Console.WriteLine("Please enter the Valid Price Amount(numberic or decimalValue)");
+                                                itemPrice = Console.ReadLine();
+                                            }
+                                            ItemPrice = double.Parse(itemPrice);
+                                            ListOfItems.Add(ListOfItems.Keys.ElementAt(ListOfItems.Count - 1) + 1, new List<string> { ItemName, CatogoryList.Find(x => x[1].Equals(ItemCatogoryId))[0],ItemPrice.ToString(),ItemCatogoryId });
+                                            Console.WriteLine("Item Successfully Added to the Stock");
+                                            Console.WriteLine("Do you want to add more items? (y/n)");
+                                            string AddMoreItems = Console.ReadLine();
+                                            while (!ContinueProcess(AddMoreItems))
+                                            {
+                                                Console.WriteLine("Please enter a valid option (y/n)");
+                                                AddMoreItems = Console.ReadLine();
+                                                
+                                            }
+                                            AddItemToStockLoop = AddMoreItems.ToLower().Equals("y");
+
+                                        }
+                                
+                                        break;
+                                    case 2:
+                                        bool RemoveItemFromStockLoop = true;
+                                        while (RemoveItemFromStockLoop)
+                                        {
+                                            try
+                                            {
+                                                Console.WriteLine("Enter the Item ID you want to remove: ");
+                                                int RemoveItemId = int.Parse(Console.ReadLine());
+                                                while (!ListOfItems.ContainsKey(RemoveItemId))
+                                                {
+                                                    Console.WriteLine("Item Not found, Please enter a valid Item ID");
+                                                    Console.WriteLine("Enter the Item ID you want to remove: ");
+                                                    RemoveItemId = int.Parse(Console.ReadLine());
+                                                }
+                                                ListOfItems.Remove(RemoveItemId);
+                                                Console.WriteLine("Item Successfully Removed from the Stock");
+                                                Console.WriteLine("Do you Want to Remove More Items?(y/n)");
+                                                string RemoveMoreItems = Console.ReadLine();
+                                                while (!ContinueProcess(RemoveMoreItems))
+                                                {
+                                                    
+                                                    
+                                                        Console.WriteLine("Please enter the Valid Option(y/n)");
+                                                        RemoveMoreItems = Console.ReadLine();
+                                                    
+                                                }
+                                                RemoveItemFromStockLoop= RemoveMoreItems.ToLower().Equals("y");
+                                            }
+                                            catch(Exception e)
+                                            {
+                                                Console.WriteLine("Item Id Must Be a Numeric Value");
+                                            }
+                                        }
+                                        break;
+                                    case 3:
+                                        bool UpdateItemLoop = true;
+                                        while (UpdateItemLoop)
+                                        {
+                                            try
+                                            {
+                                                Console.WriteLine("Enter the Item ID you want to Update: ");
+                                                int UpdateItemId = int.Parse(Console.ReadLine());
+                                                while (!ListOfItems.ContainsKey(UpdateItemId))
+                                                {
+                                                    Console.WriteLine("Item Not found, Please enter a valid Item ID");
+                                                    Console.WriteLine("Enter the Item ID you want to Update: ");
+                                                    UpdateItemId = int.Parse(Console.ReadLine());
+                                                }
+
+                                                bool UpdateDetailsLoop = true;
+                                                while (UpdateDetailsLoop)
+                                                {
+                                                    Console.WriteLine("List of Fields");
+                                                    Console.WriteLine("1.ItemName");
+                                                    Console.WriteLine("2.ItemCategory");
+                                                    Console.WriteLine("3.ItemPrice");
+                                                    Console.WriteLine("Please select the field you want to update: ");
+                                                    try
+                                                    {
+                                                   
+                                                        int UpdateFieldOption = int.Parse(Console.ReadLine());
+                                                        if (UpdateFieldOption < 1 || UpdateFieldOption > 3)
+                                                        {
+                                                            throw new Exception();
+                                                        }
+                                                        if (UpdateFieldOption == 1)
+                                                        {
+                                                            Console.WriteLine("Enter the New Item Name: ");
+                                                            string UpdateItemName = Console.ReadLine();
+                                                            ListOfItems[UpdateItemId][0] = UpdateItemName;
+                                                        }
+                                                        if (UpdateFieldOption == 2)
+                                                        {
+                                                            
+                                                            foreach (var item in SortedCategoryName)
+                                                            {
+                                                                if (CatogorySet.Add(item[1]))
+                                                                {
+
+                                                                    CatogoryList.Add(item);
+                                                                }
+                                                            }
+
+
+                                                            Console.WriteLine("Select the Category of the Item: ");
+                                                            Console.WriteLine("List of Catogories  available in the stock");
+
+                                                            foreach (List<string> item in CatogoryList.OrderBy(x => int.Parse(x[1])).ToList())
+                                                            {
+                                                                Console.WriteLine($"{item[1]}.{item[0]}");
+                                                            }
+                                                            Console.WriteLine("Please select the Catogory of the Item: ");
+                                                            string ItemCatogoryId = Console.ReadLine();
+                                                            while (true)
+                                                            {
+                                                                if (int.TryParse(ItemCatogoryId, out int CatogoryNumber))
+                                                                {
+                                                                    if (CatogoryList.Select(x => x[1]).ToList().Contains(ItemCatogoryId))
+                                                                    {
+                                                                        break;
+                                                                    }
+
+                                                                }
+                                                                Console.WriteLine("Please enter the valid Catogory number ");
+                                                                ItemCatogoryId = Console.ReadLine();
+                                                            }
+                                                            ListOfItems[UpdateItemId][3] = ItemCatogoryId;
+                                                            ListOfItems[UpdateItemId][1] = CatogoryList.Find(x => x[1].Equals(ItemCatogoryId))[0];
+                                                        }
+                                                        if (UpdateFieldOption == 3)
+                                                        {
+                                                            Console.WriteLine("Enter the New Item Price: ");
+                                                            string UpdateItemPrice = Console.ReadLine();
+                                                            while (!ValidatePrice(UpdateItemPrice))
+                                                            {
+                                                                Console.WriteLine("Please enter the Valid Price Amount(numberic or decimalValue)");
+                                                                UpdateItemPrice = Console.ReadLine();
+                                                            }
+                                                            ListOfItems[UpdateItemId][2] = UpdateItemPrice;
+
+                                                        }
+                                                        Console.WriteLine("Do you want to update more fields in the item?(y/n)");
+                                                        String UpdateMoreFields = Console.ReadLine();
+                                                        while (!ContinueProcess(UpdateMoreFields))
+                                                        {
+                                                           
+                                                            Console.ForegroundColor = ConsoleColor.Red;
+                                                            Console.WriteLine("Please enter the Valid option(y/n)");
+                                                            Console.ResetColor();
+                                                            UpdateMoreFields= Console.ReadLine();
+                                                            
+                                                        }
+                                                        UpdateDetailsLoop = UpdateMoreFields.ToLower().Equals("y");
+                                                    }
+                                                    catch (Exception e)
+                                                    {
+                                                        Console.WriteLine("Please Select a valid option");
+                                                    }
+
+                                                }
+                                                Console.WriteLine("Do you Want to Update More Items: ");
+                                                string UpdateMoreItems = Console.ReadLine();
+                                                while (!ContinueProcess(UpdateMoreItems))
+                                                {
+                                                
+                                                    Console.ForegroundColor = ConsoleColor.Red;
+                                                    Console.WriteLine("Please Enter the Valid option(y/n)");
+                                                    Console.ResetColor();
+                                                    UpdateMoreItems = Console.ReadLine();
+                                              
+                                                }
+                                                UpdateItemLoop = UpdateMoreItems.ToLower().Equals("y");
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                Console.WriteLine("Please enter the Valid option");
+
+                                            }
+                                        }
+                                        break;
+                                    case 4:
+                                        Console.WriteLine("List of Items in the Stock");
+                                        Console.WriteLine(new string('-', 100));
+                                        Console.WriteLine($"\tItemId\tItemName\t{new string(' ',4)}ItemCatogory\tItemPrice");
+                                        Console.WriteLine(new string('-', 100));
+
+                                        foreach (var item in ListOfItems)
+                                        {
+                                            Console.WriteLine($"\t{item.Key}\t{item.Value[0]+new string(' ', 20 - item.Value[0].Length)}{item.Value[1]+new string(' ', 20 - item.Value[1].Length)}{item.Value[2]}");
+                                        }
+                                        Console.WriteLine(new string('-', 100));
+                                        break;
+                                    case 5:
+                                        Console.WriteLine("Enter the New Catagory Name :");
+                                        string NewCatogoryName= Console.ReadLine();
+                                        while (!ValidateName(NewCatogoryName.Trim(),"New Catogory Name"))
+                                        {
+                                            NewCatogoryName=Console.ReadLine();
+                                        }
+                                        AvailableCatogories.Add(new KeyValuePair<int, string>(AvailableCatogories.Max(x => x.Key) + 1, NewCatogoryName));
+                                        Console.WriteLine("New Catogory Added Successfully");
+                                        break;
+                                    case 6:
+                                        AdminLoop = false;
+                                        Console.WriteLine("Admin Pannel Closed");
+                                        break;
+
+                                }
+                            }
+                            catch(Exception e)
+                            {
+                                Console.WriteLine("Please select a valid option.");
+                            }
+                        }
+                        break;
+                    case 2:
+                        Console.WriteLine("Welcome to the Mini SuperMarket!");
+                        bool BillingLoop = true;
+                        SortedDictionary<int, int> ItemsInBasket = new SortedDictionary<int, int>();
+                        double BillNumber = 1;
+                        while (BillingLoop)
+                        {
+
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("1.Select Items");
+                            Console.WriteLine("2.Proceed Final Bill");
+                            Console.WriteLine("3.Exit");
+                            Console.ResetColor();
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine("Please select an option:");
+                            Console.ResetColor();
+                            var useroption = Console.ReadLine();
+                            if (int.TryParse(useroption, out int Billingoption) && useroption.Equals("1") || useroption.Equals("2") || useroption.Equals("3") )
+                            {
+                                bool ItemsLoop = true;
+                                while (ItemsLoop)
+                                {
+                                    switch (Billingoption)
+                                    {
+
+                                        case 1:
+                                            Console.WriteLine("-------------------------------------------------------------------------------------------------");
+                                            Console.WriteLine("\tItemCode\tItemName\t    ItemCatagory\tPrice");
+                                            Console.WriteLine("-------------------------------------------------------------------------------------------------");
+
+                                            foreach (var item in ListOfItems)
+                                            {
+                                                Console.WriteLine();
+
+                                                Console.WriteLine($"\t{item.Key}\t\t{item.Value[0]+new string(' ', 20 - item.Value[0].Length)}{item.Value[1]+new string(' ', 20 - item.Value[1].Length)}{item.Value[2]}");
+                                             
+                                            }
+                                            Console.WriteLine("Please select an item code to add to your cart:");
+                                            string ItemNumber = Console.ReadLine();
+                                            int ItemCode = 0;
+                                            while (true)
+                                            {
+                                                if (int.TryParse(ItemNumber, out int UserInputcode) && ListOfItems.ContainsKey(int.Parse(ItemNumber)))
+                                                {
+                                                    ItemCode = UserInputcode;
+                                                    break;
+                                                }
+                                                else
+                                                {
+                                                    Console.ForegroundColor = ConsoleColor.Red;
+                                                    Console.WriteLine(ItemNumber + " is not a valid item code. Please enter a valid item code:");
+                                                    Console.ResetColor();
+                                                    Console.WriteLine("Please select an item code to add to your cart:");
+                                                    ItemNumber = Console.ReadLine();
+                                                }
+                                            }
+
+                                            int Quantity = 0;
+                                            Console.WriteLine($"Please enter the quantity of {ListOfItems[ItemCode][0]}:");
+                                            String UserEnteredQuantity = Console.ReadLine();
+
+                                            while (true)
+                                            {
+                                                if (int.TryParse(UserEnteredQuantity, out int quantity))
+                                                {
+                                                    Quantity = quantity;
+                                                    break;
+                                                }
+                                                else
+                                                {
+                                                    Console.ForegroundColor = ConsoleColor.Red;
+                                                    Console.WriteLine("Please enter a valid quantity.");
+                                                    Console.ResetColor();
+                                                    UserEnteredQuantity = Console.ReadLine();
+                                                }
+                                            }
+                                            if (ItemsInBasket.ContainsKey(ItemCode))
+                                            {
+                                                ItemsInBasket[ItemCode] += Quantity;
+                                            }
+                                            else
+                                            {
+                                                ItemsInBasket.Add(ItemCode, Quantity);
+                                            }
+                                            Console.WriteLine("Item added to cart successfully.");
+                                            Console.WriteLine("Do you Want to Print the Purchase bill? (y/n)");
+                                            string PurchaseOption = Console.ReadLine();
+                                            while (!ContinueProcess(PurchaseOption))
+                                            {
+                                                Console.ForegroundColor = ConsoleColor.Red;
+                                                Console.WriteLine(PurchaseOption + " is not a valid option.");
+                                                Console.WriteLine("Please enter the Correct option Either y or n:");
+
+                                                Console.ResetColor();
+                                                PurchaseOption = Console.ReadLine();
+                                            }
+                                            if (PurchaseOption.ToLower().Equals("y"))
+                                            {
+                                                goto case 2;
+                                            }
+                                            else if (PurchaseOption.ToLower().Equals("n"))
+                                            {
+                                                ItemsLoop = true;
+                                                
+                                            }
+                                            break;
+                                        case 2:
+                                            double TotalAmount = 0;
+                                            //Console.WriteLine("the Option in" + option);
+                                            if (ItemsInBasket.Count > 0)
+                                            {
+                                                Console.WriteLine("------------------------------------------------------------------------------------------------");
+                                                Console.WriteLine("                                     Mini SuperMarket                                           ");
+                                                Console.WriteLine("                                     Purchase Invoice                                           ");
+                                                Console.WriteLine("------------------------------------------------------------------------------------------------");
+                                                Console.Write($"Date: {DateTime.Now.ToString("dd/MM/yyyy")}");
+                                                Console.WriteLine($"\t\t\t\t\t\tTime: {DateTime.Now.ToString("hh:mm tt")}");
+                                                Console.WriteLine($"BillNo:{BillNumber}");
+                                                Console.WriteLine("------------------------------------------------------------------------------------------------");
+                                                Console.WriteLine("\tItemCode\tItemName\t  Price\t      Quantity\t       Amount");
+                                                Console.WriteLine("------------------------------------------------------------------------------------------------");
+
+                                                for (int i = 0; i < ItemsInBasket.Count; i++)
+                                                {
+                                                    TotalAmount += ItemsInBasket[ItemsInBasket.Keys.ElementAt(i)] * int.Parse(ListOfItems[ItemsInBasket.Keys.ElementAt(i)][2]);
+                                                    Console.WriteLine($"\t  {ItemsInBasket.Keys.ElementAt(i)}\t\t  {ListOfItems[ItemsInBasket.Keys.ElementAt(i)][0]+new string(' ', 17 - ListOfItems[ItemsInBasket.Keys.ElementAt(i)][0].Length)}{ListOfItems[ItemsInBasket.Keys.ElementAt(i)][2]+new string(' ',14 - ListOfItems[ItemsInBasket.Keys.ElementAt(i)][2].Length)}{ItemsInBasket[ItemsInBasket.Keys.ElementAt(i)]+new string(' ',15- ItemsInBasket[ItemsInBasket.Keys.ElementAt(i)].ToString().Length)}{ItemsInBasket[ItemsInBasket.Keys.ElementAt(i)] * int.Parse(ListOfItems[ItemsInBasket.Keys.ElementAt(i)][2])}");
+                                                }
+                                                Console.WriteLine("------------------------------------------------------------------------------------------------");
+                                                Console.WriteLine();
+                                                Console.WriteLine($"\t\t\t\t\t\t\t  TotalAmount =>{TotalAmount}");
+                                                Console.WriteLine("------------------------------------------------------------------------------------------------");
+
+
+                                            }
+                                            else
+                                            {
+                                                Console.WriteLine("No items in the Cart.");
+                                            }
+                                            Console.WriteLine("Do you Want to continue shopping? (y/n)");
+                                            string continueShopping = Console.ReadLine();
+                                            while (!ContinueProcess(continueShopping))
+                                            {
+
+                                                
+                                                    Console.ForegroundColor = ConsoleColor.Red;
+                                                    Console.WriteLine(continueShopping + " is not a valid option.");
+                                                    Console.WriteLine("Please");
+                                                    Console.ResetColor();
+                                                    continueShopping = Console.ReadLine();
+                                                
+
+                                            }
+                                            if (continueShopping.ToLower().Equals("y"))
+                                            {
+                                                ItemsLoop = true;
+                                                Billingoption= 1;
+                                            }
+                                            else
+                                            {
+                                                ItemsLoop = false;
+                                                ++BillNumber;
+                                                ItemsInBasket.Clear();
+                                                Console.WriteLine("Thank you for shopping with us!");
+                                            }
+                                            break;
+                                        
+                                        case 3:
+                                            Console.WriteLine("The Mini SuperMarket Billing application was Closed");
+                                            Console.WriteLine("Thank you for shopping with us!");
+                                            return;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("This is not a valid option.");
+                                Console.ResetColor();
+                            }
+                        }
+                        break;
+                    case 3:
+                        Console.WriteLine("The Mini SuperMarket Application is Closed");
+                        return;
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Please select a valid option.");
+            }
+        }
+
+    }
+    static bool ContinueProcess(string UserEnteredValue)
+    {
+        return UserEnteredValue.ToLower().Equals("n") || UserEnteredValue.ToLower().Equals("y");
+    }
+    static bool ValidatePrice(string price)
+    {
+        return double.TryParse(price, out double value);
+    }
+    static bool ValidateCatogoryId(string id,List<KeyValuePair<int,string>> AvailableCatogories)
+    {
+        return int.TryParse(id, out int CatogoryId) && AvailableCatogories.Any(x => x.Key==CatogoryId);
+    }
+    static bool ValidateId(string id)
+    {
+         return int.TryParse(id,out int CatogoryId);
+    }
+    static bool ValidateName(string name, string PlaceOfName)
+    {
+        if (name.Length <= 0)
+        {
+            Console.WriteLine($"{PlaceOfName} should not Empty ");
+            return false;
+        }
+        if (name.Length < 3)
+        {
+            Console.WriteLine($"{PlaceOfName} Must Contains Atleast 3 characters");
+            return false;
+        }
+        foreach (char Letter in name)
+        {
+            if (!(Letter >= 'a' && Letter <= 'z') && !(Letter >= 'A' && Letter <= 'Z')&&!(Letter >= '0' && Letter <= '9') || (Letter=='-'))
+            {
+                Console.WriteLine("ItemName Should Not Contains speacial Characters");
+                return false;
+            }
+        }
+        return true;
+    }
+}
