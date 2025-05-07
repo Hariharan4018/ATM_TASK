@@ -1,0 +1,317 @@
+using System;
+using System.Runtime.CompilerServices;
+
+class User
+{
+   
+    private long _CardNumber;
+    private string _Name;
+    private string _AtmPinNumber;
+    private double _Balance;
+    private Stack<string> _UserHistory=new Stack<string>();
+    public long CardNumber { get { return _CardNumber; } }
+    public string Name { get { return _Name; } }
+    public string AtmPinNumber { get { return _AtmPinNumber; } set { _AtmPinNumber = value; } }
+
+    public double Balance { get { return _Balance; }set { _Balance = value; } }
+    public Stack<String> UserHistory { get { return _UserHistory; } set { _UserHistory = value; } }
+    public User(long CareNumber, string name, string AtmPinNumber, double Balance)
+    {
+        _AtmPinNumber = AtmPinNumber;
+        _Name = name;
+        _Balance = Balance;
+        _CardNumber = CareNumber;
+        string Path = @$"C:\Users\hariharanr\source\repos\Hariharan%20R\training\ATM-TASK\{LogNameCreator()}";
+        if (!File.Exists(Path))
+        {
+            using (StreamWriter writer = new StreamWriter(Path))
+            {
+                writer.WriteLine(new string('=', 20));
+                writer.WriteLine($"User History for {Name}");
+                writer.WriteLine(new string('=', 20));
+
+            }
+        }
+        else
+        {
+            using (StreamReader reader = new StreamReader(Path))
+            {
+                string Line;
+                while ((Line = reader.ReadLine()) != null)
+                {
+                    UserHistory.Push(Line);
+                }
+            }
+        }
+    }
+    public string LogNameCreator()
+    {
+        return CardNumber + ".txt";
+    }
+    public void LogTransaction(string operation,double Amount)
+    {   
+        
+        string Path = @$"C:\Users\hariharanr\source\repos\Hariharan%20R\training\ATM-TASK\{LogNameCreator()}";
+        using (StreamWriter writer = new StreamWriter(Path,true))
+        {
+            writer.WriteLine(operation + new string(' ', 10) + Amount);
+        }
+    }
+}
+ abstract class ITransactions
+{
+    public abstract double CheckBalance(long CardNumber, Dictionary<long, User> ListOfUsers);
+    public abstract void handleDeposit(long CardNumber, double DepositAmount, Dictionary<long, User> ListOfUsers);
+    public abstract void handleWithDraw(long CardNumber, double WithDrawAmount, Dictionary<long, User> ListOfUsers);
+    public abstract void ChangeAtmPinNumber(long CardNumber, Dictionary<long, User> ListOfUsers, int NewAtmPinNumber);
+    public abstract void Mini_Statement(long CardNumber, Dictionary<long, User> ListOfUsers);
+
+}
+class Transactions: ITransactions
+{
+
+
+    public override double CheckBalance(long CardNumber, Dictionary<long, User> ListOfUsers)
+    {
+        KeyValuePair<long, User> ActionUser = ListOfUsers.First(x => x.Key == CardNumber);
+        return ActionUser.Value.Balance;
+    }
+    public override void handleDeposit(long CardNumber,double DepositAmount, Dictionary<long, User> ListOfUsers)
+    {
+        KeyValuePair<long, User> ActionUser = ListOfUsers.First(x => x.Key == CardNumber);
+        Console.WriteLine(ActionUser.Value.Name);
+        ActionUser.Value.Balance += DepositAmount;
+        ActionUser.Value.UserHistory.Push($"{new string(' ', 20)}Deposit{new string(' ', 10)}{DepositAmount}{new string(' ', 10)}{ActionUser.Value.Balance}{new string(' ', 10)}{DateTime.Now}");
+        return;
+    }
+    public override void handleWithDraw(long CardNumber, double WithDrawAmount, Dictionary<long, User> ListOfUsers)
+    {
+        KeyValuePair<long, User> ActionUser = ListOfUsers.First(x => x.Key == CardNumber);
+        ActionUser.Value.Balance -= WithDrawAmount;
+        ActionUser.Value.UserHistory.Push($"{new string(' ', 20)}Withdraw{new string(' ', 10)}{WithDrawAmount}{new string(' ', 10)}{ActionUser.Value.Balance}{new string(' ', 10)}{DateTime.Now}");
+        return;
+
+
+    }
+    public override void ChangeAtmPinNumber(long CardNumber, Dictionary<long, User> ListOfUsers,int NewAtmPinNumber)
+    {
+        KeyValuePair<long, User> ActionUser = ListOfUsers.First(x => x.Key == CardNumber);
+        ActionUser.Value.AtmPinNumber= NewAtmPinNumber.ToString();
+        return;
+        
+    }
+    public override void Mini_Statement(long CardNumber, Dictionary<long, User> ListOfUsers)
+    {
+        KeyValuePair<long, User> ActionUser = ListOfUsers.First(x => x.Key == CardNumber);
+        Console.WriteLine(new string('=', 100));
+        Console.WriteLine($"{new string(' ', 20)}Operation{new string(' ', 10)}Amount{new string(' ', 10)}Balance{new string(' ', 10)}Date and Time");
+        Console.WriteLine(new string('=', 100));
+
+        foreach (string history in ActionUser.Value.UserHistory)
+        {
+            Console.WriteLine(history);
+        }
+        Console.WriteLine(new string('=', 100));
+        return;
+    }
+}
+class ATM
+{
+    
+    static void Main(string[] args)
+    {
+        Dictionary<long,User> ListOfUsers = new Dictionary<long,User>();
+        ListOfUsers.Add(1234123412341234, new User(1234123412341234,"Hariharan","0511",130000));
+        ListOfUsers.Add(8987098709870987, new User(8987098709870987, "User1", "1703", 20133));
+        ListOfUsers.Add(1425361425361425, new User(1425361425361425, "User2", "1508", 5013649));
+        ListOfUsers.Add(9876543219876543, new User(9876543219876543, "User3", "0605", 1520463));
+        ITransactions transactions = new Transactions();
+        bool AtmLoop = true;
+        while (AtmLoop)
+        {
+            Console.WriteLine(new string('-', 100));
+            Console.WriteLine($"{new string(' ',30)}1.Login");
+            Console.WriteLine($"{new string(' ', 30)}2.Exit");
+            Console.WriteLine(new string('-', 100));
+            Console.WriteLine("Enter Your choice :");
+            try
+            {
+                int UserChoice = int.Parse(Console.ReadLine());
+                if (UserChoice < 1 || UserChoice > 2) {
+                    throw new Exception("Please enter the Avalilable options");
+                }
+                switch (UserChoice)
+                {
+                    case 1:
+                        Console.WriteLine("Welcome To ATM Login Page !!!");
+                        Console.WriteLine("Enter your 16 digit ATM card Number");
+                        long AtmCardNumber = 0;
+                        string _AtmCardNumber = Console.ReadLine();
+                        while (!ValidateATMCardNumber(_AtmCardNumber, ListOfUsers))
+                        {
+                            Console.WriteLine("Enter the Valid Account Number And it Must Contain 16 digit");
+                            _AtmCardNumber = Console.ReadLine();
+                        }
+                        AtmCardNumber=long.Parse(_AtmCardNumber);
+                        Console.WriteLine("Enter the 4 digit Pin number");
+                        string AtmPinNumber = Console.ReadLine();
+                        while (!ValidateAtmPin(AtmPinNumber))
+                        {
+                            AtmPinNumber=Console.ReadLine();
+                        }
+                        
+                        if(ListOfUsers.ContainsKey(AtmCardNumber) && ListOfUsers[AtmCardNumber].AtmPinNumber.Equals( AtmPinNumber))
+                        {
+                            bool OperationsLoop = true;
+                            while (OperationsLoop)
+                            {
+                                Console.WriteLine("List of Operations :");
+                                Console.WriteLine(new string(' ', 100));
+                                Console.WriteLine("1.Balance Equiry");
+                                Console.WriteLine("2.Deposit");
+                                Console.WriteLine("3.Withdraw");
+                                Console.WriteLine("4.Mini-statement");
+                                Console.WriteLine("5.Change the PinNumber");
+                                Console.WriteLine("6.Exit");
+                                Console.WriteLine(new string(' ', 100));
+                                Console.WriteLine("Choose the operation you want to perform");
+                                int UserOptionForOperation = 0;
+                                string _UserOptionForOperation = Console.ReadLine();
+                                while (!int.TryParse(_UserOptionForOperation, out UserOptionForOperation) && (UserOptionForOperation > 6 || UserOptionForOperation < 1))
+                                {
+                                    Console.WriteLine("Please Enter the Valid Operation Number :");
+                                    _UserOptionForOperation = Console.ReadLine();
+                                }
+                                switch (UserOptionForOperation)
+                                {
+                                    case 1:
+                                        Console.WriteLine("Welcome To Balanse Enquiry !!!");
+                                        Console.WriteLine($"{ListOfUsers[AtmCardNumber].Name} Your Balance is :  {transactions.CheckBalance(AtmCardNumber, ListOfUsers):C}");
+                                        Console.WriteLine("Thank you for visiting Have a Nice Day");
+                                        break;
+                                    case 2:
+                                        Console.WriteLine("Welcome to Deposit Section !!!");
+                                        double DepositAmount = 0;
+                                        Console.WriteLine("Enter the Amount you want to Deposit :");
+                                        string _DepositAmount = Console.ReadLine();
+                                        while(!(DepositChecker(_DepositAmount)))
+                                        {
+                                            Console.WriteLine("Deposit amount must be a Positive Number");
+                                            _DepositAmount = Console.ReadLine();
+                                        }
+                                        DepositAmount = double.Parse(_DepositAmount);
+                                        transactions.handleDeposit(AtmCardNumber, DepositAmount, ListOfUsers);
+                                        ListOfUsers[AtmCardNumber].LogTransaction("Deposit", DepositAmount);
+                                        Console.WriteLine("Deposit The amount Successfully in your Account ");
+                                        break;
+                                    case 3:
+                                        Console.WriteLine("Welcome to WithDraw Sction !!!");
+                                        double WithdrawAmount = 0;
+                                        string _WithdrawAmount = Console.ReadLine();
+                                        while(!double.TryParse(_WithdrawAmount,out WithdrawAmount) && WithdrawAmount<=0 && WithdrawAmount >= ListOfUsers[AtmCardNumber].Balance)
+                                        {
+                                            Console.WriteLine("Please enter the Valid Numeric and Positive number to Withdraw");
+                                            _WithdrawAmount = Console.ReadLine();
+                                        }
+                                        WithdrawAmount = double.Parse(_WithdrawAmount);
+                                        transactions.handleWithDraw(AtmCardNumber, WithdrawAmount, ListOfUsers);
+                                        ListOfUsers[AtmCardNumber].LogTransaction("Withdraw", WithdrawAmount);
+                                        Console.WriteLine("Withdraw Successfull");
+                                        break;
+                                    case 4:
+                                        Console.WriteLine("Here the Deatiled Mini Statement for you account :");
+                                        transactions.Mini_Statement(AtmCardNumber, ListOfUsers);
+                                        Console.WriteLine(new string('=', 100));
+                                        Console.WriteLine("Thank you have a Great day!!!");
+                                        Console.WriteLine(new string('=', 100));
+
+                                        break;
+                                    case 5:
+                                    newPinNumber:
+                                        try
+                                        {
+                                            Console.WriteLine("Welcome to PinNumber Change section");
+                                            Console.WriteLine("Please Enter the New Pin Number you Want to Change(4 digit) :");
+                                            int NewAtmPinNumber = int.Parse(Console.ReadLine());
+                                            Console.WriteLine("Please Re-enter the New pin for Confirmation(4 digit) :");
+                                            int ConfirmNewPinNumber = int.Parse(Console.ReadLine());
+                                            if (NewAtmPinNumber == ConfirmNewPinNumber && NewAtmPinNumber.ToString().Length==4)
+                                            {
+                                                transactions.ChangeAtmPinNumber(AtmCardNumber, ListOfUsers, NewAtmPinNumber);
+                                            }
+                                            else
+                                            {
+                                                Console.WriteLine("Mismatch Between Pin number and Confirm pin number or Pin number Constraint are violated");
+                                            }
+
+                                            //ListOfUsers[AtmCardNumber].LogTransaction("PinNumberChanged");
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.WriteLine(ex.Message);
+                                            goto newPinNumber;
+                                        }
+                                        break;
+                                    case 6:
+                                        OperationsLoop = false;
+                                        Console.WriteLine("Thank you for Visiting Have a Nice Day!!!");
+                                        break;
+                                        
+
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Enter the Valid Credentioals");
+                        }
+                            break;
+
+                }
+            }
+            catch (FormatException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            catch (ArgumentException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            catch (OverflowException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            catch (Exception e) {
+                Console.WriteLine(e.Message);
+            }
+
+        }
+
+
+
+
+    }
+    static bool DepositChecker(string _DepositAmount)
+    {
+        return double.TryParse(_DepositAmount, out double DepositAmount) && DepositAmount > 0;
+    }
+    static bool ValidateATMCardNumber(string AtmCardNumber,Dictionary<long,User> UsersList)
+    {
+        return long.TryParse(AtmCardNumber, out long CardNumber)  && AtmCardNumber.Length==16;
+    }
+    static bool ValidateAtmPin(string PinNumber )
+    {
+        if (PinNumber.Length == 0)
+        {
+            Console.WriteLine("Pin number should not be Empty");
+            return false;
+        }
+        if (PinNumber.Length < 4 || PinNumber.Length > 4) {
+            Console.WriteLine("PinNumber Must Be a 4 digit Number");
+            return false;
+        }
+        return int.TryParse(PinNumber, out int pinnumber) ;
+    }
+
+
+}
